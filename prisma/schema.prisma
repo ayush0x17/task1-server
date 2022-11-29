@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TxnxType {
+  CREDIT
+  DEBIT
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName String
+  lastName  String
+  username  String   @unique
+  role      Role     @default(USER)
+  password  String
+  account   Account? @relation("my account")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Transaction {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  transactionId String   @unique
+  amount        Float
+  type          TxnxType
+  fromAccount   String
+  from          Account  @relation("Sent From", fields: [fromAccount], references: [accountNumber])
+  toAccount     String?
+  to            Account? @relation("Sent To", fields: [toAccount], references: [accountNumber])
+  createdAt     DateTime @default(now())
+
+  @@map("transactions")
+}
+
+model Account {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  email           String
+  accountNumber   String        @unique
+  amount          Float
+  userId          String        @unique @db.ObjectId
+  user            User          @relation("my account", fields: [userId], references: [id])
+  transactionFrom Transaction[] @relation("Sent From")
+  transactionTo   Transaction[] @relation("Sent To")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("accounts")
+}
